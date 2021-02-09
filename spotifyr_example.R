@@ -6,12 +6,13 @@ library(ggjoy)
 
 beatles <- get_artist_audio_features('the beatles')
 
+
 beatles %>% 
   count(key_mode, sort = TRUE) %>% 
   head(5) %>% 
   kable()
 
-joy <- get_artist_audio_features('joy division')
+joy <- get_artist_audio_features('kanye west')
 joy %>% 
   arrange(-valence) %>% 
   select(track_name, valence) %>% 
