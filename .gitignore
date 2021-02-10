@@ -40,6 +40,3 @@ vignettes/*.pdf
 
 #mac dingie
 .DS_Store
-
-#die file die je hele tijd maakt
-index.html
