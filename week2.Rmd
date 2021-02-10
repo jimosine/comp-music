@@ -1,0 +1,322 @@
+---
+title: "I miss the old kanye..."
+author: "Jim Buissink"
+date: "2/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Computational Musicology 2020-2021
+
+### Introduction
+
+> I miss the old Kanye... 
+> - Kanye West (2016)
+
+But who, what & when is this 'old' Kanye? Is it possible to uncover who the old Kanye is by analyzing his music? Are there any significant differences in his earlier and later works, and is there a way to cluster these works so we have an 'old' Kanye and a 'new' Kanye? 
+
+### Corpus
+To find an answer to these questions, we will build a corpus consisting of the 9 studio albums released by Kanye West and his 2 collaborative albums. Any non-musical tracks, e.g. skits, featured on the albums will be included. If a distinction can be made between old Kanye and new Kanye, we expect there to be musical differences between his first three albums and his latter releases. This is where the music changed from cheery & soulful to dark & electronic-inspired, so we expect to see differences in valence. His latest album, Jesus Is King (2019), is an outlier concerning this stylistic change and could mean that Kanye West is returning to his original sound, or that potentially a 'future' Kanye is in the making.
+
+The 2 collaborative albums (with Jay-Z and Kid Cudi, respectivly) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus, but might serve as a reference in a later stages.
+
+### Code lecture 1
+
+```{r}
+library(tidyverse)
+library(spotifyr)
+
+```
+
+```{r}
+kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
+disney <- get_playlist_audio_features("", "37i9dQZF1DX8C9xQcOrE6T")
+```
+
+```{r}
+summary_all <- disney %>%
+  summarise(
+    mean_popularity = mean(track.popularity),
+    mean_danceability = mean(danceability),
+    mean_valence = mean(valence),
+    mean_speechiness = mean(speechiness),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    sd_speechiness = sd(speechiness),
+    sd_acousticness = sd(acousticness),
+    sd_liveness = sd(liveness),
+    median_speechiness = median(speechiness),
+    median_acousticness = median(acousticness),
+    median_liveness = median(liveness),
+    mad_speechiness = mad(speechiness),
+    mad_acousticness = mad(acousticness),
+    mad_liveness = mad(liveness)
+  )
+  
+disney %>%
+  filter('track.name' == 'Let It Go - From "Frozen"/Soundtrack Version') %>%
+  summarise(
+    mean_valence = mean(valence),
+    mean_speechiness = mean(speechiness),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    sd_speechiness = sd(speechiness),
+    sd_acousticness = sd(acousticness),
+    sd_liveness = sd(liveness),
+    median_speechiness = median(speechiness),
+    median_acousticness = median(acousticness),
+    median_liveness = median(liveness),
+    mad_speechiness = mad(speechiness),
+    mad_acousticness = mad(acousticness),
+    mad_liveness = mad(liveness)
+  )
+```
+
+```{r}
+zeros <- get_playlist_audio_features("", "6dv5FbNRVlQelteqnNDFTe")
+seventies <- get_playlist_audio_features("", "67zYW4wCQezR6AH8EuNZ1Q")
+eighties <- get_playlist_audio_features("", "23xQYspGsaIsztrKTHM8cN")
+```
+
+
+```{r}
+zeros_summary <- zeros %>%
+  summarise(
+    mean_popularity = mean(track.popularity),
+    mean_danceability = mean(danceability),
+    mean_valence = mean(valence),
+    mean_energy = mean(energy),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    mean_mode = mean(mode),
+    mean_tempo = mean(tempo)
+  )
+```
+
+```{r}
+seventies_summary <- seventies %>%
+  summarise(
+    mean_popularity = mean(track.popularity),
+    mean_danceability = mean(danceability),
+    mean_valence = mean(valence),
+    mean_energy = mean(energy),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    mean_mode = mean(mode),
+    mean_tempo = mean(tempo)
+  )
+```
+
+```{r}
+together1 <-
+  bind_rows(
+    zeros %>% mutate(category = "00s"),
+    seventies %>% mutate(category = "70s")
+  )
+```
+
+```{r}
+together2 <-
+  bind_rows(
+    zeros %>% mutate(category = "00s"),
+    seventies %>% mutate(category = "70s"),
+    eighties %>% mutate(category = "80s")
+  )
+```
+
+
+```{r}
+ggplot(together1, aes(x = energy, y = acousticness, color = category)) + geom_point()
+```
+```{r}
+together2 %>%
+  ggplot(aes(x = category, y = acousticness)) +
+  geom_violin()
+```
+```{r}
+seventies %>% ggplot(aes(x = valence, y = energy)) + geom_point() + geom_smooth()
+```
+---
+title: "I miss the old kanye..."
+author: "Jim Buissink"
+date: "2/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Computational Musicology 2020-2021
+
+### Introduction
+
+> I miss the old Kanye... 
+> - Kanye West (2016)
+
+But who, what & when is this 'old' Kanye? Is it possible to uncover who the old Kanye is by analyzing his music? Are there any significant differences in his earlier and later works, and is there a way to cluster these works so we have an 'old' Kanye and a 'new' Kanye? 
+
+### Corpus
+To find an answer to these questions, we will build a corpus consisting of the 9 studio albums released by Kanye West and his 2 collaborative albums. Any non-musical tracks, e.g. skits, featured on the albums will be included. If a distinction can be made between old Kanye and new Kanye, we expect there to be musical differences between his first three albums and his latter releases. This is where the music changed from cheery & soulful to dark & electronic-inspired, so we expect to see differences in valence. His latest album, Jesus Is King (2019), is an outlier concerning this stylistic change and could mean that Kanye West is returning to his original sound, or that potentially a 'future' Kanye is in the making.
+
+The 2 collaborative albums (with Jay-Z and Kid Cudi, respectivly) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus, but might serve as a reference in a later stages.
+
+### Code lecture 1
+
+```{r}
+library(tidyverse)
+library(spotifyr)
+
+```
+
+```{r}
+kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
+disney <- get_playlist_audio_features("", "37i9dQZF1DX8C9xQcOrE6T")
+```
+
+```{r}
+summary_all <- disney %>%
+  summarise(
+    mean_popularity = mean(track.popularity),
+    mean_danceability = mean(danceability),
+    mean_valence = mean(valence),
+    mean_speechiness = mean(speechiness),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    sd_speechiness = sd(speechiness),
+    sd_acousticness = sd(acousticness),
+    sd_liveness = sd(liveness),
+    median_speechiness = median(speechiness),
+    median_acousticness = median(acousticness),
+    median_liveness = median(liveness),
+    mad_speechiness = mad(speechiness),
+    mad_acousticness = mad(acousticness),
+    mad_liveness = mad(liveness)
+  )
+  
+disney %>%
+  filter('track.name' == 'Let It Go - From "Frozen"/Soundtrack Version') %>%
+  summarise(
+    mean_valence = mean(valence),
+    mean_speechiness = mean(speechiness),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    sd_speechiness = sd(speechiness),
+    sd_acousticness = sd(acousticness),
+    sd_liveness = sd(liveness),
+    median_speechiness = median(speechiness),
+    median_acousticness = median(acousticness),
+    median_liveness = median(liveness),
+    mad_speechiness = mad(speechiness),
+    mad_acousticness = mad(acousticness),
+    mad_liveness = mad(liveness)
+  )
+```
+
+```{r}
+zeros <- get_playlist_audio_features("", "6dv5FbNRVlQelteqnNDFTe")
+seventies <- get_playlist_audio_features("", "67zYW4wCQezR6AH8EuNZ1Q")
+eighties <- get_playlist_audio_features("", "23xQYspGsaIsztrKTHM8cN")
+```
+
+
+```{r}
+zeros_summary <- zeros %>%
+  summarise(
+    mean_popularity = mean(track.popularity),
+    mean_danceability = mean(danceability),
+    mean_valence = mean(valence),
+    mean_energy = mean(energy),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    mean_mode = mean(mode),
+    mean_tempo = mean(tempo)
+  )
+```
+
+```{r}
+seventies_summary <- seventies %>%
+  summarise(
+    mean_popularity = mean(track.popularity),
+    mean_danceability = mean(danceability),
+    mean_valence = mean(valence),
+    mean_energy = mean(energy),
+    mean_acousticness = mean(acousticness),
+    mean_liveness = mean(liveness),
+    mean_mode = mean(mode),
+    mean_tempo = mean(tempo)
+  )
+```
+
+```{r}
+together1 <-
+  bind_rows(
+    zeros %>% mutate(category = "00s"),
+    seventies %>% mutate(category = "70s")
+  )
+```
+
+```{r}
+together2 <-
+  bind_rows(
+    zeros %>% mutate(category = "00s"),
+    seventies %>% mutate(category = "70s"),
+    eighties %>% mutate(category = "80s")
+  )
+```
+
+
+```{r}
+ggplot(together1, aes(x = energy, y = acousticness, color = category)) + geom_point()
+```
+
+```{r}
+together1 %>%
+  ggplot(aes(x = category, y = acousticness)) +
+  geom_violin()
+```
+
+```{r}
+seventies %>% ggplot(aes(x = acousticness, y = energy)) + geom_point() + geom_smooth()
+```
+```{r}
+zeros %>% ggplot(aes(x = acousticness, y = energy)) + geom_point() + geom_smooth()
+```
+
+```{r}
+together1 %>% ggplot(aes(x = acousticness, y = energy)) + geom_point() + geom_smooth() + facet_wrap(~category)
+```
+
+
+
+
+### Examples
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+### Examples
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
