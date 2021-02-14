@@ -1,6 +1,5 @@
 ---
-title: "Computational Musicology 2020-2021
-."
+title: "Computational Musicology 2020-2021"
 author: "Jim Buissink"
 date: "2/9/2021"
 output: html_document
@@ -22,12 +21,13 @@ To find an answer to these questions, we will build a corpus consisting of the 9
 
 The 2 collaborative albums (with Jay-Z and Kid Cudi, respectivly) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus, but might serve as a reference in a later stages.
 
-### Findings
+## Findings
 Here we see that our main features are valence and tempo. Valence indicating the mood and tempo the bpm. Hip hop generally falls into 85-90 bpm which we see is true for the first 3 albums. 
 ```{r, echo=FALSE}
 library(spotifyr)
 library(tidyverse)
 library(knitr)
+library(ggthemes)
 
 kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
 
@@ -41,14 +41,39 @@ kanye_albums  <- transform(kanye_albums,
 
 )
 
+
+#ADD POSITIVE COLUMN
+kanye_albums <- kanye_albums %>% add_column(mood = 'yes')
+kanye_albums <- kanye_albums %>% 
+  mutate(mood= ifelse(track.album.name == 'The College Dropout' | track.album.name == 'Graduation' | track.album.name == 'Late Registration', "positive", "negative"))
+
+
 ```
 
-```{r , echo=FALSE}
-#BOXPLOTS 1
-p <- ggplot(kanye_albums, aes(x = track.album.release_date, y = valence)) + 
-  geom_boxplot() 
-p +  geom_hline(aes(yintercept = mean_valence))
+```{r, echo=FALSE}
 
+#BOXPLOTS 1
+p <- ggplot(kanye_albums, aes(x = reorder(track.album.release_date, desc(track.album.release_date)), y = valence, fill=mood)) + 
+  geom_boxplot() 
+p <- p + scale_x_discrete(labels=c("JESUS IS KING","KIDS SEE GHOSTS","ye","The Life Of Pablo", "Yeezus", "Watch The Throne", "My Beautiful Dark Twisted Fantasy", "808s & Heartbreak", "Graduation", "Late Registration", "The College Dropout"))
+p <- p +  geom_hline(yintercept = 0.40, linetype = 3)
+p <- p + coord_flip() + labs(title="Distribution of the valence feature",y="", x = "")
+
+p <- p + annotate(
+  "text",
+  x = 2.5, y = 0.58,
+  label = "Average\nvalence",
+  vjust = 1, size = 2, color = "grey40"
+)
+
+p <- p + annotate(
+  "curve",
+  x = 2.5, y = 0.58,
+  xend = 2.5, yend = 0.40,
+  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+  color = "grey40")
+
+p #+ theme_economist_white()
 #BOXPLOTS 2
 p2 <- ggplot(kanye_albums, aes(x = track.album.release_date, y = tempo)) + 
   geom_boxplot() 
