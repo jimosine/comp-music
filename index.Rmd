@@ -7,6 +7,11 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(spotifyr)
+library(tidyverse)
+library(knitr)
+library(ggthemes)
+
 ```
 
 ### Introduction
@@ -21,14 +26,9 @@ To find an answer to these questions, we will build a corpus consisting of the 9
 
 The 2 collaborative albums (with Jay-Z and Kid Cudi, respectivly) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus, but might serve as a reference in a later stages.
 
-## Findings
-Here we see that our main features are valence and tempo. Valence indicating the mood and tempo the bpm. Hip hop generally falls into 85-90 bpm which we see is true for the first 3 albums. 
+## Valence & Tempo
+Before we can cluster the works in to two (or potentially three) groups, we need to find out which audio features contain the most useful information. As already was mentioned in the previous section, valence seems to be a good indicator. Below is a plot of the distribution of the valence for each album. We can see that his first three albums sound positive (valence > 0.5) and the latter sound negative (valence < 0.5)
 ```{r, echo=FALSE}
-library(spotifyr)
-library(tidyverse)
-library(knitr)
-library(ggthemes)
-
 kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
 
 
@@ -45,7 +45,11 @@ kanye_albums  <- transform(kanye_albums,
 #ADD POSITIVE COLUMN
 kanye_albums <- kanye_albums %>% add_column(mood = 'yes')
 kanye_albums <- kanye_albums %>% 
-  mutate(mood= ifelse(track.album.name == 'The College Dropout' | track.album.name == 'Graduation' | track.album.name == 'Late Registration', "positive", "negative"))
+  mutate(mood= ifelse(track.album.name == 'The College Dropout' | track.album.name == 'Graduation' | track.album.name == 'Late Registration', "Positive", "Negative"))
+
+#ADD AVG Tempo Column
+kanye_albums <- kanye_albums %>% 
+  mutate(avg_tempo= ifelse(track.album.name == 'The College Dropout' | track.album.name == 'JESUS IS KING' | track.album.name == 'Graduation' | track.album.name == 'Late Registration', "< 100 bpm", "> 100 bpm"))
 
 
 ```
@@ -63,7 +67,7 @@ p <- p + annotate(
   "text",
   x = 2.5, y = 0.58,
   label = "Average\nvalence",
-  vjust = 1, size = 2, color = "grey40"
+  vjust = 1, size = 3, color = "grey40"
 )
 
 p <- p + annotate(
@@ -72,23 +76,76 @@ p <- p + annotate(
   xend = 2.5, yend = 0.40,
   arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
   color = "grey40")
-
+p <- p + theme(legend.title=element_blank())
 p #+ theme_economist_white()
+```
+Another feature with similar behavior is the tempo. The BPM used for hip-hop beats is generally around 60-100 bpm. We can see from the plot blow that only his first three albums have a tempo < 100, with the an exception for his latest album 'JESUS IS KING'.
+
+```{r, echo=FALSE}
 #BOXPLOTS 2
-p2 <- ggplot(kanye_albums, aes(x = track.album.release_date, y = tempo)) + 
+p2 <- ggplot(kanye_albums, aes(x = reorder(track.album.release_date, desc(track.album.release_date)), y = tempo, fill=avg_tempo)) + 
   geom_boxplot() 
-p2 +  geom_hline(aes(yintercept = mean_tempo))
+p2 <- p2 + scale_x_discrete(labels=c("JESUS IS KING","KIDS SEE GHOSTS","ye","The Life Of Pablo", "Yeezus", "Watch The Throne", "My Beautiful Dark Twisted Fantasy", "808s & Heartbreak", "Graduation", "Late Registration", "The College Dropout"))
+p2 <- p2 +  geom_hline(yintercept = 112, linetype = 3)
+p2 <- p2 +  coord_flip() + labs(title="Distribution of the tempo feature",y="", x = "")
+
+p2 <- p2 + annotate(
+  "text",
+  x = 10, y = 135,
+  label = "Average\ntempo",
+  vjust = 1, size = 3, color = "grey40"
+)
+
+p2 <- p2 + annotate(
+  "curve",
+  x = 10, y = 135,
+  xend = 9, yend = 112,
+  arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+  color = "grey40")
+
+p2 <- p2 + theme(legend.title=element_blank())
+p2
+
 ```
 
 
-## Including Plots
+## Emotion
 
-But valence together with energy tells ur the general mood of a song. happy or sad or etc. If we group the albums on the features we previously saw, we group the first 3 as old, later albums as new. We get the following moodboard. The color indicates the date is was released. 
+Whereas valence as a standalone feature tells us something about the general mood of a song, e.g. positive or negative, we could combine the valence with the energy feature. This pair of parameters now tells us something about the emotional level of a track. Low energy + low valence songs are considered 'sad', low valence + high energy are 'angry', songs with high valence + low energy are 'calm' and high valence + high energy are 'happy'. This section needs some more work.
 
 ```{r , echo=FALSE}
-mood <- kanye_albums %>% ggplot(aes(x = valence, y = energy, color = track.album.name)) +
-  geom_jitter(alpha = 0.6) + geom_hline(yintercept = 0.5) + geom_vline(xintercept = 0.5)
+mood <- kanye_albums %>% ggplot(aes(x = valence, y = energy, color = track.album.release_date)) +
+  geom_jitter(alpha = 0.6) + geom_hline(yintercept = 0.5) + geom_vline(xintercept = 0.5) 
 
+mood <- mood + labs(title="Distribution of tracks according to valence and energy", colour = "Release date")
+
+mood <- mood + annotate(
+  "text",
+  x = 0.90, y = 0.95,
+  label = "HAPPY",
+  vjust = 1, size = 4
+)
+
+mood <- mood + annotate(
+  "text",
+  x = 0.1, y = 0.95,
+  label = "ANGRY",
+  vjust = 1, size = 4
+)
+
+mood <- mood + annotate(
+  "text",
+  x = 0.1, y = 0.1,
+  label = "SAD",
+  vjust = 1, size = 4
+)
+
+mood <- mood + annotate(
+  "text",
+  x = 0.90, y = 0.1,
+  label = "CALM",
+  vjust = 1, size = 4
+)
 mood
 ```
 
