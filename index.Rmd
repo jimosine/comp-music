@@ -26,8 +26,11 @@ To find an answer to these questions, we will build a corpus consisting of the 9
 
 The 2 collaborative albums (with Jay-Z and Kid Cudi, respectivly) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus, but might serve as a reference in a later stages.
 
-## Valence & Tempo
-Before we can cluster the works in to two (or potentially three) groups, we need to find out which audio features contain the most useful information. As already was mentioned in the previous section, valence seems to be a good indicator. Below is a plot of the distribution of the valence for each album. We can see that his first three albums sound positive (valence > 0.5) and the latter sound negative (valence < 0.5)
+### Distribution of features 
+Before we can cluster the works in to two (or potentially three) groups, we need to find out which audio features contain the most useful information.
+
+#### Valence
+As already was mentioned in the previous section, valence seems to be a good indicator. Below is a plot of the distribution of the valence for each album. We can see that his first three albums sound positive (valence > 0.5) and the latter sound negative (valence < 0.5)
 ```{r, echo=FALSE}
 kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
 
@@ -79,6 +82,9 @@ p <- p + annotate(
 p <- p + theme(legend.title=element_blank())
 p #+ theme_economist_white()
 ```
+
+
+#### Tempo
 Another feature with similar behavior is the tempo. The BPM used for hip-hop beats is generally around 60-100 bpm. We can see from the plot blow that only his first three albums have a tempo < 100, with the an exception for his latest album 'JESUS IS KING'.
 
 ```{r, echo=FALSE}
@@ -109,7 +115,7 @@ p2
 ```
 
 
-## Emotion
+### Emotion
 
 Whereas valence as a standalone feature tells us something about the general mood of a song, e.g. positive or negative, we could combine the valence with the energy feature. This pair of parameters now tells us something about the emotional level of a track. Low energy + low valence songs are considered 'sad', low valence + high energy are 'angry', songs with high valence + low energy are 'calm' and high valence + high energy are 'happy'. This section needs some more work.
 

@@ -7,6 +7,7 @@ library(ggthemes)
 kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
 summary_all <- kanye_albums %>%
   summarise(
+    mean_tempo = mean(tempo),
     mean_popularity = mean(track.popularity),
     mean_danceability = mean(danceability),
     mean_valence = mean(valence),
