@@ -16,12 +16,12 @@ library(ggthemes)
 library(plotly)
 library(compmus)
 ```
-### Chroma & Timber
 
-BLABLABLA
+
+### Comparing the structure of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus 
 
 ```{r, echo=FALSE}
-we_major <-  get_tidy_audio_analysis("46fk9wjYcPm0sgym2b7EEE") %>% # Change URI.
+dark_fantasy <-  get_tidy_audio_analysis("7yNK27ZTpHew0c55VvIJgm") %>% # Change URI.
   compmus_align(bars, segments) %>%                     # Change `bars`
   select(bars) %>%                                      #   in all three
   unnest(bars) %>%                                      #   of these lines.
@@ -29,20 +29,86 @@ we_major <-  get_tidy_audio_analysis("46fk9wjYcPm0sgym2b7EEE") %>% # Change URI.
     pitches =
       map(segments,
         compmus_summarise, pitches,
-        method = "mean", norm = "manhattan"              # Change summary & norm.
+        method = "acentre", norm = "manhattan"              # Change summary & norm.
       )
   ) %>%
   mutate(
     timbre =
       map(segments,
         compmus_summarise, timbre,
-        method = "mean", norm = "manhattan"              # Change summary & norm.
+        method = "mean"              # Change summary & norm.
       )
   )
+
+
+bind_rows(
+  dark_fantasy%>% 
+    compmus_self_similarity(pitches, "aitchison") %>% 
+    mutate(d = d / max(d), type = "Chroma"),
+  dark_fantasy %>% 
+    compmus_self_similarity(timbre, "euclidean") %>% 
+    mutate(d = d / max(d), type = "Timbre")
+) %>%
+  mutate() %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  facet_wrap(~type) +
+  scale_fill_viridis_c(option = "E", guide = "none") +
+  theme_classic() + 
+  labs(x = "", y = "")
+
 ```
 
+***
+
+Another way to compare Kanye's music is to look at the way he structured his songs using self-similarity matrices (SSMs). Lets have a look at the opening tracks of his 5th album My Beautiful Dark Twisted Fantasy (2010) and his 6th album Yeezus (2013). 
+
+My Beautiful Dark Twisted Fantasy (MBDTF) features a maximalist aesthetic & clean production quality. The album is critically acclaimed and won a Grammy for best rap album, it is listed as the 14th best album on Metacritic with a score of 94. Wikipedia classified the album as Hip hop / prog-rap/ popart/ pop / rap opera. If we think about most of these genres, we think of a clearly structured song. The opening track for MBDTF is self titled 'Dark Fantasy' and checks this box. 
+
+From both the chroma and the timbre matrix, we can see the structure of the song. After a short intro, we start with a prolonged version of the chorus. From the diagonal lines in the chroma matrix, we can clearly see that this chorus itself is repeating a couple of bars. Following this we have two verses from Kanye with a shorter version of the chorus in between. After the 3rd chorus, we have a small bridge section and another short version of the chorus. The track then ends with an instrumental loop and after a brief silence + sharp sound (clearly depicted in the timbre matrix), we encounter the long version of the chorus one last time.
+
+
+### Comparing the structure of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus cont.
+
 ```{r, echo = FALSE}
-we_major %>%  compmus_self_similarity(pitches, "manhattan") %>% 
+on_sight <-  get_tidy_audio_analysis("1gqkRc9WtOpnGIqxf2Hvzr") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "acentre", norm = "manhattan"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "mean"              # Change summary & norm.
+      )
+  )
+
+bind_rows(
+  on_sight%>% 
+    compmus_self_similarity(pitches, "aitchison") %>% 
+    mutate(d = d / max(d), type = "Chroma"),
+  on_sight %>% 
+    compmus_self_similarity(timbre, "euclidean") %>% 
+    mutate(d = d / max(d), type = "Timbre")
+
+) %>%
+  mutate() %>% 
   ggplot(
     aes(
       x = xstart + xduration / 2,
@@ -54,27 +120,17 @@ we_major %>%  compmus_self_similarity(pitches, "manhattan") %>%
   ) +
   geom_tile() +
   coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
+  facet_wrap(~type) +
+  scale_fill_viridis_c(option = "E", guide = "none") +
+  theme_classic() + 
   labs(x = "", y = "")
 ```
-```{r, echo = FALSE}
-we_major %>%  compmus_self_similarity(timbre, "manhattan") %>% 
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
-  labs(x = "", y = "")
-```
+
+***
+
+Contrasting his previous release, Kanye's approach for Yeezus is in favor of a more minimalist approach. The album has been characterized as West's most experimental and sonically abrasive work. Because of the great reviews for his previous album, expectations were sky high for this release. But, instead of trying to one up his previous masterpiece he does a complete 180. Yeezus is a divisive album, and clearly does not fit in the 'Old Kanye' box. Lets have a look at the opening track 'On Sight'. 
+
+It is very hard to see a clear structure from the matrices, and every line is very blurry. This could be because of the way the track is produced, very compressed and industrial sounding. In the chroma matrix we do see the interlude clearly, starting at around 75 seconds into the song, but is less visible in the timbre matrix. Vice versa, the outro which starts at around 120 seconds into the song is visible in the timbre matrix, but not in the chroma matrix.
 
 
 ### Introduction
