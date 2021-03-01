@@ -16,6 +16,66 @@ library(ggthemes)
 library(plotly)
 library(compmus)
 ```
+### Chroma & Timber
+
+BLABLABLA
+
+```{r, echo=FALSE}
+we_major <-  get_tidy_audio_analysis("46fk9wjYcPm0sgym2b7EEE") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "mean", norm = "manhattan"              # Change summary & norm.
+      )
+  )
+```
+
+```{r, echo = FALSE}
+we_major %>%  compmus_self_similarity(pitches, "manhattan") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+```
+```{r, echo = FALSE}
+we_major %>%  compmus_self_similarity(timbre, "manhattan") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+```
+
 
 ### Introduction
 
