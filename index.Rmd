@@ -15,8 +15,168 @@ library(knitr)
 library(ggthemes)
 library(plotly)
 library(compmus)
+library(ggplot2)
+library(grid)
+library(gridExtra)
 ```
 
+### Using Spotify’s **lower-level track audio features** to find differences in Kanye's albums
+
+```{r, echo = FALSE}
+YEE <- get_playlist_audio_features(
+    "Jim Buissink",
+    "2CcGtxKk4k5EbZC53tCBTr"
+  ) %>%
+  add_audio_analysis()
+
+TCD <- get_playlist_audio_features(
+    "Jim Buissink",
+    "388Cb240QQLt1i5P9iVH6j"
+  ) %>%
+  #slice(2:13) %>%
+  add_audio_analysis()
+
+album123 <-
+  YEE %>%
+  mutate(album = "YEEZUS") %>%
+  bind_rows(TCD %>% mutate(album = "The College Dropout"))
+  
+```
+
+```{r, echo=FALSE}
+# EOEs <- get_playlist_audio_features(
+#     "Jim Buissink",
+#     "3feALye5YioFPOoV6d7LrP"
+#   ) %>%
+#   slice(1:11) %>%
+#   add_audio_analysis()
+# 
+# JIK <- get_playlist_audio_features(
+#     "Jim Buissink",
+#     "6LDcbbYnHVHlfPYUbRBY1H"
+#   ) %>%
+#   add_audio_analysis()
+
+```
+
+```{r, echo=FALSE}
+plottt1 <- album123 %>%
+  mutate(
+    timbre =
+      map(
+        segments,
+        compmus_summarise,
+        timbre,
+        method = "mean"
+      )
+  ) %>%
+  select(album, timbre) %>%
+  compmus_gather_timbre() %>%
+  ggplot(aes(x = basis, y = value, fill = album)) +
+  geom_boxplot(outlier.shape = NA)  + theme(legend.position = c(0.70, 0.8),
+          legend.direction = "horizontal") +
+  #scale_fill_viridis_d() +
+  labs(x = "Timbre Coefficients", y = "", fill = "Album")
+# 
+# plottt12 <- album123 %>%
+#   mutate(
+#     timbre =
+#       map(
+#         segments,
+#         compmus_summarise,
+#         timbre,
+#         method = "mean"
+#       )
+#   ) %>%
+#   select(album, timbre) %>%
+#   compmus_gather_timbre() %>%
+#   ggplot(aes(x = basis, y = value, fill = album)) +
+#   geom_violin() + theme(legend.position = "none") +
+#   #scale_fill_viridis_d() +
+#   labs(x = "Spotify Timbre Coefficients", y = "", fill = "Album")
+
+```
+
+```{r, echo=FALSE}
+plottt2 <- album123 %>%
+  mutate(
+    pitches =
+      map(
+        segments,
+        compmus_summarise,
+        pitches,
+        method = "rms", norm = "euclidean"
+      )
+  ) %>%
+  select(album, pitches) %>%
+  compmus_gather_chroma() %>%
+  ggplot(aes(x = pitch_class, y = value, fill = album)) +
+  geom_boxplot(outlier.shape = NA) + theme(legend.position = "none") +
+  #scale_fill_viridis_d() +
+  labs(x = "Pitch Classes", y = "", fill = "Album")
+# 
+# plottt22 <- album123 %>%
+#   mutate(
+#     pitches =
+#       map(
+#         segments,
+#         compmus_summarise,
+#         pitches,
+#         method = "rms", norm = "euclidean"
+#       )
+#   ) %>%
+#   select(album, pitches) %>%
+#   compmus_gather_chroma() %>%
+#   ggplot(aes(x = pitch_class, y = value, fill = album)) +
+#   geom_violin()  +
+#   labs(x = "Spotify Pitch Classes", y = "", fill = "Album")
+```
+
+```{r, echo=FALSE}
+# 
+# # Create two plots without legends
+# plotttx <- album123 %>%
+#   mutate(
+#     pitches =
+#       map(
+#         segments,
+#         compmus_summarise,
+#         pitches,
+#         method = "rms", norm = "euclidean"
+#       )
+#   ) %>%
+#   select(album, pitches) %>%
+#   compmus_gather_chroma() %>%
+#   ggplot(aes(x = pitch_class, y = value, fill = album)) +
+#   geom_boxplot(outlier.shape = NA) + 
+#   #scale_fill_viridis_d() +
+#   labs(x = "Spotify Pitch Classes", y = "", fill = "Album") +
+#   theme(legend.position = "right", legend.box = "horizontal") 
+# 
+# # Create user-defined function, which extracts legends from ggplots
+# extract_legend <- function(my_ggp) {
+#   step1 <- ggplot_gtable(ggplot_build(my_ggp))
+#   step2 <- which(sapply(step1$grobs, function(x) x$name) == "guide-box")
+#   step3 <- step1$grobs[[step2]]
+#   return(step3)
+# }
+# 
+# # Apply user-defined function to extract legend
+# shared_legend <- extract_legend(plotttx)
+
+# Draw plots with shared legend 
+grid.arrange(arrangeGrob(plottt1, plottt2, ncol = 1, top="Spotify’s lower-level track audio analysis"))
+```
+
+***
+
+We already saw from the previous pages that we were able to distinguish Kanye's work using Spotify's audio features like valence, energy & tempo. These features are quite high-level, meaning that Spotify already did a lot of work to obtain these features. It is also possible to obtain lower level features from Spotify's API, which might also add extra information when trying to cluster albums into groups.
+
+We are going to compare two albums, *Yeezus* & The *College Dropout (TCD)*. These albums are, according to analysis using the higher level features, the most contrasting works from Kanye's discography. For this comparison we will look at the **average timbre coefficients** and the **average pitch classes**. From the two distributions of these features, we can actually see that **these two albums are not as distinct as we might have thought**. 
+
+For the **timbre coefficients** we see that they are **distributed similarly** for both albums. There is an exception for coefficient c05 where the mean is a bit higher for TCD compared to Yeezus, and there is one for coefficient c07 where the distribution for Yeezus is left-skewed, and vice versa. For the **pitch classes**, there is a bit **more distinction** between the two albums. **Especially the variance** of the pitch classes, which is significantly larger for Yeezus than for TDC, could potentially serve as an extra variable when trying to cluster Kanye's albums.
+
+Further work should be done to confirm this for his other albums as well. 
 
 ### Comparing the structure of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus 
 
