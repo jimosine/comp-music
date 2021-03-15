@@ -20,6 +20,83 @@ library(grid)
 library(gridExtra)
 ```
 
+### Can we use Spotify's **tempo feature** for **classification** or **clustering**?
+```{r, echo=FALSE}
+follow_god<-  get_tidy_audio_analysis("2QpGZOhTCHHiKmpSO9FW4h")
+bound_2 <-  get_tidy_audio_analysis("3sNVsP50132BTNlImLx70i")
+wonder <- get_tidy_audio_analysis("4jQqM4NI79HEcWHUJb8Hvf")
+
+```
+
+
+```{r, echo=FALSE}
+
+a1 <- follow_god %>%
+  tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Follow God - Fourier-based") +
+  theme_classic()
+
+a2 <- follow_god %>%
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Follow God - Cyclic") +
+  theme_classic()
+
+b1 <- wonder %>%
+  tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "I Wonder - Fourier-based") +
+  theme_classic()
+
+b2<- wonder %>%
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "I Wonder - Cyclic") +
+  theme_classic()
+grid.arrange(arrangeGrob(b1, b2, a1, a2, ncol = 2, top="Tempograms of outliers"))
+```
+
+*** 
+
+In our previous work (*see distribution of tempo*), we identified Spotify's tempo feature as a possible candidate to distinguish Kanye's early work from his latter. We also identified a couple of outliers, which only occurred for his slower & early work (and his latest album, which indicated a new change of styles). We will inspect the two worst outliers using a tempogram. These outliers are *"I Wonder"* from the album *"Graduation"* and *"Follow God"* from the album *"Jesus Is King"*. 
+
+For our first song, "I Wonder", Spotify labeled the tempo as **191.385 BPM**. This is actually the highest for our entire corpus, and differs greatly from the mean tempo of the album it is featured on which is 80 BPM. Listening to the track, we don't get the idea that this BPM is correct and neither that Spotify should have a hard time measuring the BPM. Upon inspecting the "Fourier-based" and "Cyclic" tempograms, we see that indeed Spotify was able to produce clear plots. However, it prefers to label the BPM according to the "Fourier-based" tempogram which picks up strongly on **tempo harmonics**. The correct BPM should be the sub-harmonic, **96 BPM**
+
+We see the same behavior for our other outlier "Follow God". Spotify incorrectly labeled the BPM as **180 BPM**, with the correct being its sub-harmonic **90 BPM**. 
+
+These **incorrect labels will hurt the performance of a classifying/clustering algorithm**, as these outliers are more likely to be assigned to the incorrect groups. It might be a good idea to correct the tempo features using tempograms.
+
+
+
+```{r, echo=FALSE}
+# famous <- get_tidy_audio_analysis("19a3JfW8BQwqHWUMbcqSx8")
+# 
+# famous %>%
+#   tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) %>%
+#   ggplot(aes(x = time, y = bpm, fill = power)) +
+#   geom_raster() +
+#   scale_fill_viridis_c(guide = "none") +
+#   labs(x = "Time (s)", y = "Tempo (BPM)", title = "Famous not cyclic") +
+#   theme_classic()
+# 
+# famous %>%
+#   tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+#   ggplot(aes(x = time, y = bpm, fill = power)) +
+#   geom_raster() +
+#   scale_fill_viridis_c(guide = "none") +
+#   labs(x = "Time (s)", y = "Tempo (BPM)", title = "Famous cyclic") +
+#   theme_classic()
+```
+
 ### Using Spotify’s **lower-level track audio features** to find differences in Kanye's albums
 
 ```{r, echo = FALSE}
