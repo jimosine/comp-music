@@ -53,17 +53,19 @@ cluster1_dist <- dist(cluster1_juice, method = "manhattan")
 ```
 
 ```{r, echo=FALSE}
+# dend <- cluster1_dist %>% hclust(method = "average") %>% as.dendrogram 
+# dend %>% set("labels_col", value = c("green", "blue"), k=2) %>% set("branches_k_color", value = c("green", "blue"), k = 2) %>% as.ggdend(dend)
+# ggplot(dend)
+```
+
+
+```{r, echo=FALSE}
 cluster1 <- cluster1_dist %>% 
   hclust(method = "average") %>% # Try single, average, and complete.
   dendro_data() %>%
   ggdendrogram(rotate = TRUE) +
   labs(x = "", y = "", title = "Clustering albums on average valence, tempo & energy") 
 cluster1
-```
-```{r, echo=FALSE}
-# dend <- cluster1_dist %>% hclust(method = "average") %>% as.dendrogram 
-# dend %>% set("labels_col", value = c("green", "blue"), k=2) %>% set("branches_k_color", value = c("green", "blue"), k = 2) %>% as.ggdend(dend)
-# ggplot(dend)
 ```
 
 ***
@@ -75,6 +77,7 @@ If we look at the top level, where we get two clusters, we find that indeed his 
 There are some other interesting observations when looking at lower levels of the dendogram. For instance, his collaborative album 'Watch The Throne' is an outlier in the sense that it is part of a rather vague & large cluster 'new Kanye', but none other. This makes sense for the reason that it is not completely his own work and upon listening to the album, it also does not sound like a Kanye West album.
 
 Other smaller sub-clusters from the 'new Kanye' clusters are:  
+
 1. His emotional, sad albums: 'ye' + '808s and hearthbreak'
 2. His experimental, industrial album: 'Yeezus'
 3. His more poppy, less thematic albums: 'The Life of Pablo' + 'KIDS SEE GHOSTS' + 'My Beautiful Dark Twisted Fantasy'
