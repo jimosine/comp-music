@@ -24,147 +24,23 @@ library(heatmaply)
 library(dendextend)
 ```
 
-### Clustering **'old'** & **'new'** Kanye using Spotify's selected low level features
-
-```{r, echo=FALSE}
-kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
-cluster_test <- kanye_albums %>% group_by(track.album.name) %>%
- summarize(mean_tempo = mean(tempo), mean_energy = mean(energy), mean_valence = mean(valence))
-```
-
-```{r, echo=FALSE}
-cluster1_juice <-
-  recipe(
-    track.album.name ~
-    mean_tempo + mean_energy + mean_valence,
-    data = cluster_test
-  ) %>%
-  #step_center(all_predictors()) %>%
-  #step_scale(all_predictors()) %>% 
-  step_range(all_predictors()) %>% 
-  prep(cluster_test %>% mutate(track.album.name = str_trunc(track.album.name, 20))) %>%
-  juice() %>%
-  column_to_rownames("track.album.name")
-```
-
-
-```{r, echo=FALSE}
-cluster1_dist <- dist(cluster1_juice, method = "manhattan")
-```
-
-```{r, echo=FALSE}
-# dend <- cluster1_dist %>% hclust(method = "average") %>% as.dendrogram 
-# dend %>% set("labels_col", value = c("green", "blue"), k=2) %>% set("branches_k_color", value = c("green", "blue"), k = 2) %>% as.ggdend(dend)
-# ggplot(dend)
-```
-
-
-```{r, echo=FALSE}
-cluster1 <- cluster1_dist %>% 
-  hclust(method = "average") %>% # Try single, average, and complete.
-  dendro_data() %>%
-  ggdendrogram(rotate = TRUE) +
-  labs(x = "", y = "", title = "Clustering albums on average valence, tempo & energy") 
-cluster1
-```
-
-***
-
-So, lets find out if there is any distinction between an *'old'* & *'new'* Kanye. From our previous work, we found that Spotify's low level features such as **tempo, valence & energy** looked like good variables for a clustering algorithm. Using the mean of these features for each album, (as we are interested in grouping albums together and not particular tracks), we create our clusters which can be seen in the dendogram.
-
-If we look at the top level, where we get two clusters, we find that indeed his early work is grouped together. But we also find his latest album, 'JESUS IS KING' in this cluster. This indicates that Kanye West is returning to his 'old' self, and that this term does not refer to a period in time, but rather a typical sound. 
-
-There are some other interesting observations when looking at lower levels of the dendogram. For instance, his collaborative album 'Watch The Throne' is an outlier in the sense that it is part of a rather vague & large cluster 'new Kanye', but none other. This makes sense for the reason that it is not completely his own work and upon listening to the album, it also does not sound like a Kanye West album.
-
-Other smaller sub-clusters from the 'new Kanye' clusters are:  
-
-1. His emotional, sad albums: 'ye' + '808s and hearthbreak'
-2. His experimental, industrial album: 'Yeezus'
-3. His more poppy, less thematic albums: 'The Life of Pablo' + 'KIDS SEE GHOSTS' + 'My Beautiful Dark Twisted Fantasy'
-
-<!-- Checken dat de grammy winning albums een cluster vormen. -->
-
-### Clustering **'old'** & **'new'** Kanye using _ features
-
-```{r, echo=FALSE}
-cluster_test2 <- kanye_albums %>%  add_audio_analysis() %>%
-  mutate(
-    segments = map2(segments, key, compmus_c_transpose),
-    pitches =
-      map(segments,
-        compmus_summarise, pitches,
-        method = "mean", norm = "manhattan"
-      ),
-    timbre =
-      map(
-        segments,
-        compmus_summarise, timbre,
-        method = "mean"
-      )
-  ) %>%
-  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
-  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
-  unnest(cols = c(pitches, timbre)) %>%
-  group_by(track.album.name) %>%
-  summarize(mean_tempo = mean(tempo), mean_energy = mean(energy), mean_valence = mean(valence), 
-  mean_danceability = mean(danceability), mean_c01 = mean(c01), mean_c02 = mean(c02), mean_C = mean(C),
-  sd_C = sd(C), mean_c05 = mean(c05), sd_c07 = mean(c07))
-```
-
-```{r, echo= FALSE}
-#cluster_test2
-```
-
-
-```{r, echo=FALSE}
-cluster2_juice <-
-  recipe(
-    track.album.name ~
-     mean_tempo + mean_energy + mean_valence + mean_danceability + mean_c01 + mean_c02 + mean_c05 + sd_c07 + mean_C + sd_C,
-    data = cluster_test2
-  ) %>%
-  #step_center(all_predictors()) %>%
-  #step_scale(all_predictors()) %>% 
-  step_range(all_predictors()) %>% 
-  prep(cluster_test2 %>% mutate(track.album.name = str_trunc(track.album.name, 20))) %>%
-  juice() %>%
-  column_to_rownames("track.album.name")
-```
-
-
-```{r, echo=FALSE}
-cluster2_dist <- dist(cluster2_juice, method = "manhattan")
-```
-
-```{r, echo=FALSE}
-cluster2 <- cluster2_dist %>% 
-  hclust(method = "complete") %>% # Try single, average, and complete.
-  dendro_data() %>%
-  ggdendrogram(rotate = TRUE) +
-  labs(x = "", y = "", title = "Clustering albums on _ features") 
-cluster2
-```
-
-
-***
-
-Still testing using other features
-
 
 ### Introduction
 
 > I miss the old Kanye... 
-> - Kanye West (2016)
+> "I Love Kanye" - Kanye West (2016)
 
 But who, what & when is this 'old' Kanye? Is it possible to uncover who the old Kanye is by analyzing his music? Are there any significant differences in his earlier and later works, and is there a way to cluster these works so we have an 'old' Kanye and a 'new' Kanye? 
 
-To find an answer to these questions, we will build a corpus consisting of the 9 studio albums released by Kanye West and his 2 collaborative albums. Any non-musical tracks, e.g. skits, featured on the albums will be included. If a distinction can be made between old Kanye and new Kanye, we expect there to be musical differences between his first three albums and his latter releases. This is where the music changed from cheery & soulful to dark & electronic-inspired, so we expect to see differences in valence. His latest album, Jesus Is King (2019), is an outlier concerning this stylistic change and could mean that Kanye West is returning to his original sound, or that potentially a 'future' Kanye is in the making.
+To find an answer to these questions, we will build a corpus consisting of the 9 studio albums released by Kanye West and his 2 collaborative albums. Any non-musical tracks, e.g. skits, featured on the albums will be included. If a distinction can be made between old Kanye and new Kanye, we expect there to be musical differences between his first three albums and his latter releases. This is where the music changed from cheery & soulful to dark & electronic-inspired, so we expect to see differences in valence as this indicates mood and timbre coefficients as these indicate the tone color. His latest album, Jesus Is King (2019), is an outlier concerning this stylistic change and could mean that Kanye West is returning to his original sound, or that potentially a 'future' Kanye is in the making.
 
-The 2 collaborative albums (with Jay-Z and Kid Cudi, respectivly) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus, but might serve as a reference in a later stages.
+The 2 collaborative albums (with Jay-Z and Kid Cudi, respectively) are included as I feel that Kanye did have enough of an influence during the creation of these works so his personality should be reflected in the music, although it might be for only 50%. Singles and tracks where Kanye was a featured artist are excluded from the corpus.
+
+First, we will try to find some useful features we could use for our clustering algorithm using Spotify's API. Afterwards, we will investigate other tools to compare musical pieces and finally we will implement our clustering algorithm which will be used to discover which albums sound the most similar.
 
 
 
-### Distribution of Valence 
+### Seperating albums on their mood using **valence** 
 ```{r, echo=FALSE}
 kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
 
@@ -219,11 +95,11 @@ p #+ theme_economist_white()
 
 ***
 
-Before we can cluster the works in to two (or potentially three) groups, we need to find out which audio features contain the most useful information.
+As mentioned in the introduction, we need to find out which audio features contain the most useful information for our corpus.
 
-As already was mentioned in the previous section, valence seems to be a good indicator. Below is a plot of the distribution of the valence for each album. We can see that his first three albums sound positive (valence > 0.5) and the latter sound negative (valence < 0.5)
+One of such features is **valence**, which Spotify describes as the **musical positiveness**. To the left is a plot of the distribution of the valence for each album. We can see that his first three albums sound positive (valence > 0.5) and the latter sound negative (valence < 0.5). For this reason, valence seems to be a good feature as there is a clear distinction between Kanye's early and newer work.
 
-### Distribution of Tempo 
+### Seperating albums on their **tempo** using BPM 
 ```{r, echo=FALSE}
 #BOXPLOTS 2
 p2 <- ggplot(kanye_albums, aes(x = reorder(track.album.release_date, desc(track.album.release_date)), y = tempo, fill=avg_tempo)) + 
@@ -253,11 +129,12 @@ p2
 
 ***
 
-Another feature with similar behavior is the tempo. The BPM used for hip-hop beats is generally around 60-100 bpm. We can see from the plot blow that only his first three albums have a tempo < 100, with the an exception for his latest album 'JESUS IS KING'.
+Another feature with similar behavior is the tempo. From the Spotify API, we can find the tempo in **beats per minute (BPM)** for each track. From the plot of the distribution of these tempi, we see that again the first three albums are distinct from the rest of Kanye's work. There is one exception for his latest album 'JESUS IS KING. These albums all have an **average BPM of < 100** whilst the rest of his albums all have an **average BPM of > 100**
+
+The BPM used for hip-hop beats is generally around 60-100 bpm. This indicates that his early and newest work are typical Hip Hop albums but the other albums aren't.
 
 
-### Emotion
-
+### Seperating albums on their **emotional level** using valence and energy
 ```{r , echo=FALSE}
 mood <- kanye_albums %>% ggplot(aes(x = valence, y = energy, color = track.album.release_date)) +
   geom_jitter(alpha = 0.6) + geom_hline(yintercept = 0.5) + geom_vline(xintercept = 0.5) 
@@ -298,7 +175,9 @@ fig
 
 ***
 
-Whereas valence as a standalone feature tells us something about the general mood of a song, e.g. positive or negative, we could combine the valence with the energy feature. This pair of parameters now tells us something about the emotional level of a track. Low energy + low valence songs are considered 'sad', low valence + high energy are 'angry', songs with high valence + low energy are 'calm' and high valence + high energy are 'happy'. This section needs some more work.
+Whereas valence as a standalone feature tells us something about the general mood of a song, e.g. positive or negative, we could combine the valence with the energy feature. This pair of parameters now tells us something about the emotional level of a track. Low energy + low valence songs are considered 'sad', low valence + high energy are 'angry', songs with high valence + low energy are 'calm' and high valence + high energy are 'happy'.
+
+Using this new **emotion** feature, we can see that most of Kanye's **early** work is classified as **Happy**, his **newest** work is mostly **Sad** and the albums released **in between** are **Angry**.
 
 ### Using Spotify’s **lower-level track audio features** to find differences in Kanye's albums
 
@@ -456,7 +335,7 @@ We are going to compare two albums, *Yeezus* & The *College Dropout (TCD)*. Thes
 
 For the **timbre coefficients** we see that they are **distributed similarly** for both albums. There is an exception for coefficient c05 where the mean is a bit higher for TCD compared to Yeezus, and there is one for coefficient c07 where the distribution for Yeezus is left-skewed, and vice versa. For the **pitch classes**, there is a bit **more distinction** between the two albums. **Especially the variance** of the pitch classes, which is significantly larger for Yeezus than for TDC, could potentially serve as an extra variable when trying to cluster Kanye's albums.
 
-Further work should be done to confirm this for his other albums as well. 
+It seems that we could use these timbre coefficients and pitch classes as extra features for our clustering algrithm, because they could serve both as a way to group albums together and as a way to distinguish albums. 
 
 
 
@@ -508,15 +387,15 @@ grid.arrange(arrangeGrob(b1, b2, a1, a2, ncol = 2, top="Tempograms of outliers")
 
 *** 
 
-In our previous work (*see distribution of tempo*), we identified Spotify's tempo feature as a possible candidate to distinguish Kanye's early work from his latter. We also identified a couple of outliers, which only occurred for his slower & early work (and his latest album, which indicated a new change of styles). We will inspect the two worst outliers using a tempogram. These outliers are *"I Wonder"* from the album *"Graduation"* and *"Follow God"* from the album *"Jesus Is King"*. 
+In our previous work (*Seperating albums on their tempo using BPM*), we identified Spotify's tempo feature as a possible candidate to distinguish Kanye's albums. We also identified a couple of outliers, which only occurred for his slower & early work (and his latest album, which indicated a new change of styles). We will inspect the two worst outliers using a tempogram. These outliers are *"I Wonder"* from the album *"Graduation"* and *"Follow God"* from the album *"Jesus Is King"*. 
 
 For our first song, "I Wonder", Spotify labeled the tempo as **191.385 BPM**. This is actually the highest for our entire corpus, and differs greatly from the mean tempo of the album it is featured on which is 80 BPM. Listening to the track, we don't get the idea that this BPM is correct and neither that Spotify should have a hard time measuring the BPM. Upon inspecting the "Fourier-based" and "Cyclic" tempograms, we see that indeed Spotify was able to produce clear plots. However, it prefers to label the BPM according to the "Fourier-based" tempogram which picks up strongly on **tempo harmonics**. The correct BPM should be the sub-harmonic, **96 BPM**
 
 We see the same behavior for our other outlier "Follow God". Spotify incorrectly labeled the BPM as **180 BPM**, with the correct being its sub-harmonic **90 BPM**. 
 
-These **incorrect labels will hurt the performance of a classifying/clustering algorithm**, as these outliers are more likely to be assigned to the incorrect groups. It might be a good idea to correct the tempo features using tempograms.
+These **incorrect labels will hurt the performance of a classifying/clustering algorithm**, as these outliers are more likely to be assigned to the incorrect groups. Therefore, we should correct the tempo features for such outliers using tempograms before we apply our clustering algorithm .
 
-### Comparing the structure of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus 
+### Comparing the **structure** of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus 
 
 ```{r, echo=FALSE}
 dark_fantasy <-  get_tidy_audio_analysis("7yNK27ZTpHew0c55VvIJgm") %>% # Change URI.
@@ -568,14 +447,14 @@ bind_rows(
 
 ***
 
-Another way to compare Kanye's music is to look at the way he structured his songs using self-similarity matrices (SSMs). Lets have a look at the opening tracks of his 5th album My Beautiful Dark Twisted Fantasy (2010) and his 6th album Yeezus (2013). 
+Another way to compare Kanye's music is to look at the way he structured his songs using **self-similarity matrices (SSMs)**. Lets have a look at the opening tracks of his 5th album My Beautiful Dark Twisted Fantasy (2010) and his 6th album Yeezus (2013). 
 
-My Beautiful Dark Twisted Fantasy (MBDTF) features a maximalist aesthetic & clean production quality. The album is critically acclaimed and won a Grammy for best rap album, it is listed as the 14th best album on Metacritic with a score of 94. Wikipedia classified the album as Hip hop / prog-rap/ popart/ pop / rap opera. If we think about most of these genres, we think of a clearly structured song. The opening track for MBDTF is self titled 'Dark Fantasy' and checks this box. 
+My Beautiful Dark Twisted Fantasy (MBDTF) features a maximalist aesthetic & clean production quality. Wikipedia classified the album as Hip hop / prog-rap/ popart/ pop / rap opera. If we think about most of these genres, we think of a clearly structured song. The opening track for MBDTF is self titled 'Dark Fantasy' and checks this box. 
 
 From both the chroma and the timbre matrix, we can see the structure of the song. After a short intro, we start with a prolonged version of the chorus. From the diagonal lines in the chroma matrix, we can clearly see that this chorus itself is repeating a couple of bars. Following this we have two verses from Kanye with a shorter version of the chorus in between. After the 3rd chorus, we have a small bridge section and another short version of the chorus. The track then ends with an instrumental loop and after a brief silence + sharp sound (clearly depicted in the timbre matrix), we encounter the long version of the chorus one last time.
 
 
-### Comparing the structure of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus cont.
+### Comparing the **structure** of the opening tracks of My Beautiful Dark Twisted fantasy and Yeezus **cont.**
 
 ```{r, echo = FALSE}
 on_sight <-  get_tidy_audio_analysis("1gqkRc9WtOpnGIqxf2Hvzr") %>% # Change URI.
@@ -630,6 +509,8 @@ Contrasting his previous release, Kanye's approach for Yeezus is in favor of a m
 
 It is very hard to see a clear structure from the matrices, and every line is very blurry. This could be because of the way the track is produced, very compressed and industrial sounding. In the chroma matrix we do see the interlude clearly, starting at around 75 seconds into the song, but is less visible in the timbre matrix. Vice versa, the outro which starts at around 120 seconds into the song is visible in the timbre matrix, but not in the chroma matrix.
 
+This indicates that we could also distinguish Kanye's work using a different approach. But, as we are most interested in clustering his albums using a clustering algorithm, we choose to stick to the audio features mentioned in the previous tabs.
+
 
 
 ```{r, echo=FALSE}
@@ -653,38 +534,148 @@ It is very hard to see a clear structure from the matrices, and every line is ve
 ```
 
 
-### Chromagram
+### Clustering **'old'** & **'new'** Kanye using Spotify's selected high level features
 
 ```{r, echo=FALSE}
-angriest <-
-  get_tidy_audio_analysis("46fk9wjYcPm0sgym2b7EEE") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
+kanye_albums <- get_playlist_audio_features("", "4bQNKK5gntETwqlI1RW9w1")
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'The College Dropout'] <- ' (1) The College Dropout'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'Late Registration'] <- ' (2) Late Registration'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'Graduation'] <- ' (3) Graduation'
+kanye_albums$track.album.name[kanye_albums$track.album.name == '808s & Heartbreak'] <- ' (4) 808s & Heartbreak'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'My Beautiful Dark Twisted Fantasy'] <- ' (5) My Beautiful Dark Twisted Fantasy'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'Watch The Throne'] <- ' (6) Watch The Throne'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'Yeezus'] <- ' (7) Yeezus'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'The Life Of Pablo'] <- ' (7) The Life Of Pablo'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'ye'] <- ' (8) ye'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'KIDS SEE GHOSTS'] <- ' (9) KIDS SEE GHOSTS'
+kanye_albums$track.album.name[kanye_albums$track.album.name == 'JESUS IS KING'] <- ' (10) JESUS IS KING'
+#kanye_albums <- kanye_albums %>% mutate(track.album.name = if(track.album.name == 'The College Dropout', 'The College Dropout')
+cluster_test <- kanye_albums %>% group_by(track.album.name) %>%
+ summarize(mean_tempo = mean(tempo), mean_energy = mean(energy), mean_valence = mean(valence), sd_tempo = sd(tempo), sd_energy = sd(energy), sd_valence = sd(valence))
 ```
 
 ```{r, echo=FALSE}
-#`manhattan`, `euclidean`, or `chebyshev`
-angriest %>%
-  mutate(pitches = map(pitches, compmus_normalise, "chebyshev")) %>%
-  compmus_gather_chroma() %>% 
-  ggplot(
-    aes(
-      x = start + duration / 2,
-      width = duration,
-      y = pitch_class,
-      fill = value
-    )
-  ) +
-  geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  theme_minimal() +
-  scale_fill_viridis_c()
+cluster1_juice <-
+  recipe(
+    track.album.name ~
+    mean_tempo + mean_energy + mean_valence,
+    data = cluster_test
+  ) %>%
+  #step_center(all_predictors()) %>%
+  #step_scale(all_predictors()) %>% 
+  step_range(all_predictors()) %>% 
+  prep(cluster_test %>% mutate(track.album.name = str_trunc(track.album.name, 30))) %>%
+  juice() %>%
+  column_to_rownames("track.album.name")
 ```
 
-*** 
 
-Let's have a look at the most angriest track in Kanye's discography: "We Major" from the album "Late Regristration". This album itself is the second most happiest album (looking at mean Valence + mean Energy) which makes this track a significant outlier. Upon listening to the the track, I don't get a particular angry vibe from it. Let's find out what is happening in the track by expecting its chromagram.
+```{r, echo=FALSE}
+cluster1_dist <- dist(cluster1_juice, method = "manhattan")
+```
 
-From the chromagram, we can see a lot of movement in the track but a clear break happening at the 300 seconds mark. During this break/bridge, we can see that everything is F#/G flat. At this part, the music doesn't really change that much but we have Kanye West speak in an aggressive tone, clearly different from the rest
+```{r, echo=FALSE}
+# dend <- cluster1_dist %>% hclust(method = "average") %>% as.dendrogram 
+# dend %>% set("labels_col", value = c("green", "blue"), k=2) %>% set("branches_k_color", value = c("green", "blue"), k = 2) %>% as.ggdend(dend)
+# ggplot(dend)
+```
 
+
+```{r, echo=FALSE}
+cluster1 <- cluster1_dist %>% 
+  hclust(method = "average") %>% # Try single, average, and complete.
+  dendro_data() %>%
+  ggdendrogram(rotate = TRUE) +
+  labs(x = "", y = "", title = "Clustering albums on average valence, tempo & energy") 
+cluster1
+```
+
+***
+
+So, lets find out if there is any distinction between an *'old'* & *'new'* Kanye. From our previous work, we found that Spotify's low level features such as **tempo, valence & energy** looked like good variables for a clustering algorithm. Using the mean of these features for each album, (as we are interested in grouping albums together and not particular tracks), we create our clusters using hierarchical clustering which can be seen in the dendogram.
+
+If we look at the top level, where we get two clusters, we find that indeed his early work is grouped together. But we also find his latest album, 'JESUS IS KING' in this cluster. This indicates that Kanye West is returning to his 'old' self, and that this term does not refer to a period in time, but rather a typical sound. 
+
+There are some other interesting observations when looking at lower levels of the dendogram. For instance, his collaborative album 'Watch The Throne' is an outlier in the sense that it is part of a rather vague & large cluster 'new Kanye', but none other. This makes sense for the reason that it is not completely his own work and upon listening to the album, it also does not sound like a Kanye West album.
+
+Other smaller sub-clusters from the 'new Kanye' clusters are:  
+
+1. His emotional, sad albums: 'ye' + '808s and hearthbreak'
+2. His experimental, industrial album: 'Yeezus'
+3. His more poppy, less thematic albums: 'The Life of Pablo' + 'KIDS SEE GHOSTS' + 'My Beautiful Dark Twisted Fantasy'
+
+<!-- Checken dat de grammy winning albums een cluster vormen. -->
+
+
+### Clustering **'old'** & **'new'** Kanye using Spotify's selected high level and low level features
+
+```{r, echo=FALSE}
+cluster_test3 <- kanye_albums %>%  add_audio_analysis() %>%
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) %>%
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+  unnest(cols = c(pitches, timbre)) %>%
+  group_by(track.album.name) %>%
+  summarize(mean_tempo = mean(tempo), mean_energy = mean(energy), mean_valence = mean(valence), sd_tempo = sd(tempo), sd_energy = sd(energy), sd_valence = sd(valence), mean_c01 = mean(c01), mean_c02 = mean(c02), mean_c03 = mean(c03), mean_c04 = mean(c04),
+  mean_c05 = mean(c05), mean_c06 = mean(c06), mean_c07 = mean(c07), mean_c08 = mean(c08), mean_c09 = mean(c09), mean_c09 = mean(c09),
+  mean_c10 = mean(c10), mean_c11 = mean(c11) ,mean_c12 = mean(c12), sd_c01 = sd(c01), sd_c02 = sd(c02), sd_c03 = sd(c03), sd_c04 = sd(c04), sd_c05 = sd(c05), sd_c06 = sd(c06), sd_c07 = sd(c07), sd_c08 = sd(c08), sd_c09 = sd(c09), sd_c09 = sd(c09), sd_c10 = sd(c10), sd_c11 = sd(c11), sd_c12 = sd(c12), mean_C = mean(C, na.rm=TRUE), sd_C = sd(C), mean_C2 = mean(`C#|Db`, na.rm=TRUE), mean_D = mean(D, na.rm=TRUE), mean_D2 = mean(`D#|Eb`, na.rm=TRUE), mean_E = mean(E, na.rm=TRUE), mean_F = mean(F, na.rm=TRUE), mean_F2 = mean(`F#|Gb`, na.rm=TRUE), mean_G = mean(G, na.rm=TRUE), mean_G2 = mean(`G#|Ab`, na.rm=TRUE), mean_A = mean(A, na.rm=TRUE), mean_A2 = mean(`A#|Bb`, na.rm=TRUE), mean_B = mean(B, na.rm=TRUE), sd_C2 = sd(`C#|Db`, na.rm=TRUE), sd_D = sd(D, na.rm=TRUE), sd_D2 = sd(`D#|Eb`, na.rm=TRUE), sd_E = sd(E, na.rm=TRUE), sd_F = sd(F, na.rm=TRUE), sd_F2 = sd(`F#|Gb`, na.rm=TRUE), sd_G = sd(G, na.rm=TRUE), sd_G2 = sd(`G#|Ab`, na.rm=TRUE), sd_A = sd(A, na.rm=TRUE), sd_A2 = sd(`A#|Bb`, na.rm=TRUE), sd_B = sd(B, na.rm=TRUE))
+```
+
+
+```{r, echo=FALSE}
+cluster3_juice <-
+  recipe(
+    track.album.name ~
+     mean_tempo + mean_energy + mean_valence + mean_c01 + mean_c02 + mean_c03 + mean_c04 + mean_c05 + mean_c06 + mean_c07 + mean_c08 + mean_c09 + mean_c10 + mean_c11 + mean_c12 + sd_c01 + sd_c03 + sd_c04 + sd_c05 + sd_c05 + sd_c06 + sd_c07 + sd_c08 + sd_c09 + sd_c10 + sd_c11 + sd_c12 + mean_C + mean_C2 + mean_D + mean_D2 + mean_E + mean_F + mean_F2 + mean_G + mean_G2 + mean_A + mean_A2 + mean_B + sd_C + sd_C2 + sd_D + sd_D2 + sd_E + sd_F + sd_F2 + sd_G + sd_G2 + sd_A + sd_A2,
+    data = cluster_test3
+  ) %>%
+  #step_center(all_predictors()) %>%
+  #step_scale(all_predictors()) %>% 
+  step_range(all_predictors()) %>% 
+  prep(cluster_test3 %>% mutate(track.album.name = str_trunc(track.album.name, 30))) %>%
+  juice() %>%
+  column_to_rownames("track.album.name")
+```
+
+
+```{r, echo=FALSE}
+cluster3_dist <- dist(cluster3_juice, method = "manhattan")
+```
+
+```{r, echo=FALSE}
+cluster3 <- cluster3_dist %>% 
+  hclust(method = "complete") %>% # Try single, average, and complete.
+  dendro_data() %>%
+  ggdendrogram(rotate = TRUE) +
+  labs(x = "", y = "", title = "Clustering albums on valence, energy, tempo, pitch class and timbre") 
+cluster3
+```
+
+***
+
+We also saw in the previous tabs that we could include Spotify's lower level features as variables. When adding the average timbre coefficients and average pitch classes for each album to the clustering algorithm, we are obtaining completely different clusters compared to the clusters created when just using the higher level features.
+
+For our first of the two main clusters, we can see that only the first two albums of the *'Higher Education'* trilogy remain together, and that his 3rd album *'Graduation'* is now moved to a cluster quite far from the other two. Taken its place, we have his 8th album *'ye'* which sounds nothing like the first two albums. 
+
+For all subclusters, there is not much of an underlying theme and I feel like the previous clusters were more representative. 
+
+### Conclusion
+
+The purpose of this project was to find possible clusters of albums for the discography of Kanye West. Using Spotify's API we found suitable features like valence, tempo and energy. Using these features, we found suitable clusters which distinguished his early work from his newer work, whilst his latest album actually belonged to this early cluster. This indicates that Kanye West might be returning to his older self.
+
+We also saw that Spotify's lower level features such as timbre coefficients and pitch classes could be used to for a clustering algorithm. When including these to the clustering algorithm, we actually found clusters that did not make much sense. This is probably because whilst there are some differences between albums for these features, they are not representative for the albums' sound. 
+
+Concluding, we were able to find an **Old** Kanye West and a **New** Kanye West. These labels are mostly related to the emotional level and the tempo of his music. As his latest album can be seen as *Old Kanye*, I'm eager to find out if his upcoming work is keeping up with this trend, or if we are entering a completely new era of Kanye West. 
